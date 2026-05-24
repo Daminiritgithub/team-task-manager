@@ -1,0 +1,6 @@
+{
+  "name": "Team Task Manager",
+  "description": "A comprehensive Team Task Manager with role-based access control, custom JWT authentication, project spaces, and an interactive analytics dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

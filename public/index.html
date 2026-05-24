@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-50">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Task Manager</title>
+    <!-- Import Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+              display: ['Space Grotesk', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="h-full font-sans text-slate-800 antialiased flex flex-col">
+
+    <!-- Global Loading Spinner Overlay -->
+    <div id="global-loader" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300">
+      <div class="bg-white p-5 rounded-2xl shadow-xl flex flex-col items-center gap-3">
+        <svg class="animate-spin h-8 w-8 text-neutral-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-sm font-medium tracking-tight text-neutral-600">Syncing with workspace...</span>
+      </div>
+    </div>
+
+    <!-- Toast Notification Overlay Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none max-w-sm w-full"></div>
+
+    <!-- Root Structure -->
+    <div id="app" class="flex flex-col h-full md:flex-row overflow-hidden">
+      
+      <!-- LEFT SIDEBAR (Hidden on guest session) -->
+      <aside id="sidebar" class="hidden w-64 bg-slate-900 text-white flex-shrink-0 flex-col transition-all duration-300 ease-in-out md:flex">
+        <!-- Sidebar Brand Banner -->
+        <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="h-8 w-8 rounded bg-slate-100 flex items-center justify-center">
+              <span class="font-display font-bold text-slate-900 text-base">T</span>
+            </div>
+            <span class="font-display font-semibold tracking-tight text-lg text-slate-100">TeamSpace</span>
+          </div>
+          <!-- Collapse Button for small side responses -->
+          <button id="close-sidebar-mobile" class="md:hidden text-slate-400 hover:text-white">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- System Navigation Section -->
+        <nav class="flex-1 px-4 py-6 space-y-1">
+          <a href="#/dashboard" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-850 hover:text-white transition">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+            </svg>
+            Dashboard
+          </a>
+          <a href="#/projects" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-850 hover:text-white transition">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            Projects
+          </a>
+          <a href="#/tasks" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-850 hover:text-white transition">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Tasks
+          </a>
+        </nav>
+
+        <!-- Current User Profile Card Footer -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="h-10 w-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 font-semibold uppercase tracking-tight text-sm" id="user-avatar-initials">
+              👤
+            </div>
+            <div class="min-w-0 flex-1">
+              <div id="username-display" class="text-sm font-medium text-slate-100 truncate">Teammate</div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span id="role-badge" class="px-1.5 py-0.2 bg-slate-800 text-[10px] uppercase font-bold tracking-wider rounded text-slate-300 border border-slate-750">Member</span>
+              </div>
+            </div>
+          </div>
+          <button id="logout-button" class="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition border border-transparent hover:border-red-500/10">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      <!-- CONTENT BODY REGION -->
+      <main class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <!-- HEADER NAVBAR (only visible when authenticated) -->
+        <header id="top-navbar" class="hidden h-16 bg-white border-b border-slate-200 flex-shrink-0 items-center justify-between px-6">
+          <div class="flex items-center gap-3">
+            <button id="open-sidebar-mobile" class="md:hidden text-slate-500 hover:text-slate-800 p-1 rounded hover:bg-slate-100">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 id="page-title" class="font-display font-bold text-slate-900 text-lg md:text-xl">Team Task Manager</h1>
+          </div>
+          <div id="datetime-indicator" class="hidden sm:flex items-center gap-1.5 font-mono text-xs text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+            <svg class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span id="header-time">2026-05-24 12:23</span>
+          </div>
+        </header>
+
+        <!-- ROUTING SCREEN SLOTS -->
+        <div id="screens" class="flex-1 overflow-y-auto bg-slate-50/60 p-4 sm:p-6 md:p-8">
+
+          <!-- ================= SCREEN: LOGIN ================= -->
+          <section id="screen-login" class="hidden min-h-full flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+            <div class="sm:mx-auto sm:w-full sm:max-w-md">
+              <div class="mx-auto h-12 w-12 rounded-xl bg-slate-950 flex items-center justify-center text-white font-display font-bold text-xl">T</div>
+              <h2 class="mt-6 text-center text-3xl font-display font-extrabold text-slate-900 tracking-tight">Sign in to workspace</h2>
+              <p class="mt-2 text-center text-sm text-slate-500">
+                Or
+                <a href="#/signup" class="font-semibold text-neutral-800 hover:underline">create a new teammate account</a>
+              </p>
+            </div>
+
+            <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+              <div class="bg-white py-8 px-6 shadow-xl rounded-2xl border border-slate-150 sm:px-10">
+                <form id="form-login" class="space-y-6">
+                  <div>
+                    <label for="login-email" class="block text-sm font-medium text-slate-700">Email Address</label>
+                    <div class="mt-1">
+                      <input id="login-email" name="email" type="email" autocomplete="email" required class="appearance-none block w-full px-3 py-2.5 border border-slate-250 rounded-xl shadow-xs placeholder-slate-400 focus:outline-none focus:ring-slate-800 focus:border-slate-800 text-sm" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="login-password" class="block text-sm font-medium text-slate-700">Password</label>
+                    <div class="mt-1">
+                      <input id="login-password" name="password" type="password" autocomplete="current-password" required class="appearance-none block w-full px-3 py-2.5 border border-slate-250 rounded-xl shadow-xs placeholder-slate-400 focus:outline-none focus:ring-slate-800 focus:border-slate-800 text-sm" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-xs text-sm font-semibold text-white bg-slate-900 hover:bg-slate-850 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-850 transition">
+                      Sign In
+                    </button>
+                  </div>
+                </form>
+
+                <div class="mt-6 border-t border-slate-200 pt-6">
+                  <div class="text-xs text-slate-400 text-center leading-relaxed">
+                    Demo Accounts:<br>
+                    <span class="font-mono text-slate-500">admin@demo.com</span> / <span class="font-mono text-slate-500 font-semibold text-[11px]">Admin@123</span> (Global Admin)<br>
+                    <span class="font-mono text-slate-500">member@demo.com</span> / <span class="font-mono text-slate-500 font-semibold text-[11px]">Member@123</span> (Project Member)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= SCREEN: SIGNUP ================= -->
+          <section id="screen-signup" class="hidden min-h-full flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+            <div class="sm:mx-auto sm:w-full sm:max-w-md">
+              <div class="mx-auto h-12 w-12 rounded-xl bg-slate-950 flex items-center justify-center text-white font-display font-bold text-xl">T</div>
+              <h2 class="mt-6 text-center text-3xl font-display font-extrabold text-slate-900 tracking-tight">Create your account</h2>
+              <p class="mt-2 text-center text-sm text-slate-500">
+                Or
+                <a href="#/login" class="font-semibold text-neutral-800 hover:underline">sign in to existing workspace</a>
+              </p>
+            </div>
+
+            <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+              <div class="bg-white py-8 px-6 shadow-xl rounded-2xl border border-slate-150 sm:px-10">
+                <form id="form-signup" class="space-y-6">
+                  <div>
+                    <label for="signup-name" class="block text-sm font-medium text-slate-700">Full Name</label>
+                    <div class="mt-1">
+                      <input id="signup-name" name="name" type="text" placeholder="Sarah Jenkins" required class="appearance-none block w-full px-3 py-2.5 border border-slate-250 rounded-xl shadow-xs placeholder-slate-400 focus:outline-none focus:ring-slate-800 focus:border-slate-800 text-sm" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="signup-email" class="block text-sm font-medium text-slate-700">Email Address</label>
+                    <div class="mt-1">
+                      <input id="signup-email" name="email" type="email" placeholder="sarah@company.com" required class="appearance-none block w-full px-3 py-2.5 border border-slate-250 rounded-xl shadow-xs placeholder-slate-400 focus:outline-none focus:ring-slate-800 focus:border-slate-800 text-sm" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="signup-password" class="block text-sm font-medium text-slate-700">Password</label>
+                    <div class="mt-1">
+                      <input id="signup-password" name="password" type="password" placeholder="At least 6 characters" required class="appearance-none block w-full px-3 py-2.5 border border-slate-250 rounded-xl shadow-xs placeholder-slate-400 focus:outline-none focus:ring-slate-800 focus:border-slate-800 text-sm" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="signup-role" class="block text-sm font-medium text-slate-700">System Role</label>
+                    <div class="mt-1">
+                      <select id="signup-role" name="role" class="block w-full px-3 py-2.5 border border-slate-250 rounded-xl shadow-xs bg-white focus:outline-none focus:ring-slate-800 focus:border-slate-800 text-sm">
+                        <option value="member">Teammate Member</option>
+                        <option value="admin">Global Administrator</option>
+                      </select>
+                    </div>
+                    <p class="mt-1.5 text-[11px] text-slate-450 leading-normal">
+                      💡 Global Administrators can create projects, assign members to any system task, and manage all visual workspaces.
+                    </p>
+                  </div>
+
+                  <div>
+                    <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-xs text-sm font-semibold text-white bg-slate-900 hover:bg-slate-850 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-850 transition">
+                      Register Workspace Account
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= SCREEN: DASHBOARD ================= -->
+          <section id="screen-dashboard" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 id="dashboard-welcome-heading" class="text-2xl font-display font-extrabold tracking-tight text-slate-900 sm:text-3xl">Workspace Dashboard</h1>
+                <p class="mt-1 text-sm text-slate-500">Monitor tasks progression, deadlines and overdue allocations.</p>
+              </div>
+              <div class="flex gap-2.5" id="dashboard-actions">
+                <!-- Actions added with buttons dynamically to handle admin tasks creation -->
+              </div>
+            </div>
+
+            <!-- ANALYTICS STATS CARDS GRID -->
+            <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+              <!-- Grid item: Total Tasks -->
+              <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <div class="p-2 w-max bg-slate-100 rounded-lg text-slate-700 mb-4">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Tasks</p>
+                </div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="stat-total-tasks" class="font-display font-bold text-3xl text-slate-900">0</span>
+                </div>
+              </div>
+
+              <!-- Grid item: Assigned to Me -->
+              <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <div class="p-2 w-max bg-slate-100 rounded-lg text-slate-755 mb-4">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">My Tasks</p>
+                </div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="stat-my-tasks" class="font-display font-bold text-3xl text-slate-900">0</span>
+                </div>
+              </div>
+
+              <!-- Grid item: To Do -->
+              <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <div class="p-2 w-max bg-gray-50 rounded-lg text-gray-500 mb-4 border border-gray-100">
+                    <span class="text-xs font-mono font-bold uppercase tracking-widest px-1">ToDo</span>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">To Do</p>
+                </div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="stat-todo-tasks" class="font-display font-bold text-3xl text-slate-700">0</span>
+                </div>
+              </div>
+
+              <!-- Grid item: In Progress -->
+              <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <div class="p-2 w-max bg-blue-50 rounded-lg text-blue-600 mb-4 border border-blue-100">
+                    <span class="text-xs font-mono font-bold uppercase tracking-widest px-1">Prog</span>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">In Progress</p>
+                </div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="stat-progress-tasks" class="font-display font-bold text-3xl text-blue-600">0</span>
+                </div>
+              </div>
+
+              <!-- Grid item: Done -->
+              <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <div class="p-2 w-max bg-green-50 rounded-lg text-green-600 mb-4 border border-green-100">
+                    <span class="text-xs font-mono font-bold uppercase tracking-widest px-1">Done</span>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Completions</p>
+                </div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="stat-done-tasks" class="font-display font-bold text-3xl text-green-600">0</span>
+                </div>
+              </div>
+
+              <!-- Grid item: Overdue -->
+              <div id="card-stat-overdue" class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between transition-colors duration-300">
+                <div>
+                  <div class="p-2 w-max bg-red-50 rounded-lg text-red-600 mb-4 border border-red-100">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <p id="label-stat-overdue" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overdue</p>
+                </div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="stat-overdue-tasks" class="font-display font-bold text-3xl text-slate-900">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- DASHBOARD TIMELINE (RECENT TASKS) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              <!-- Left side: Recent Tasks list (col-span-2) -->
+              <div class="lg:col-span-2 space-y-4">
+                <div class="bg-white rounded-2xl border border-slate-150 shadow-xs overflow-hidden">
+                  <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h3 class="font-display font-bold text-slate-900 text-lg">Timeline Activity</h3>
+                      <p class="text-slate-400 text-xs mt-0.5">Showing up to 5 recently created workspace items.</p>
+                    </div>
+                    <a href="#/tasks" class="text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-slate-50 transition">
+                      All Tasks &rarr;
+                    </a>
+                  </div>
+                  
+                  <div class="divide-y divide-slate-100 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
+                      <thead class="bg-slate-50 text-slate-500 font-medium text-xs uppercase tracking-wider">
+                        <tr>
+                          <th class="px-6 py-3">Task Details</th>
+                          <th class="px-6 py-3">Assignee</th>
+                          <th class="px-4 py-3">Priority</th>
+                          <th class="px-4 py-3">Status</th>
+                          <th class="px-6 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="dashboard-recent-tasks-body" class="divide-y divide-slate-100 bg-white">
+                        <!-- Filled dynamically -->
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <!-- Empty state for recent tasks -->
+                  <div id="recent-tasks-empty" class="hidden p-8 flex flex-col items-center justify-center text-center gap-2">
+                    <div class="p-3 bg-slate-50 rounded-full text-slate-400 border border-slate-100">
+                      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0V9a2 2 0 00-2-2H6a2 2 0 00-2 2v4.5" />
+                      </svg>
+                    </div>
+                    <h4 class="font-semibold text-slate-700 text-sm">No tasks added to the workspace yet</h4>
+                    <p class="text-xs text-slate-400 max-w-xs">Ask an administrator to deploy projects, invite team members, and formulate tracking directives.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right side: Quick Info card -->
+              <div class="space-y-4">
+                <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-xs relative overflow-hidden flex flex-col justify-between h-56">
+                  <!-- Decorative circle vectors -->
+                  <div class="absolute -top-10 -right-10 w-32 h-32 bg-slate-800 rounded-full opacity-40"></div>
+                  <div class="absolute -bottom-8 -left-8 w-24 h-24 bg-slate-800 rounded-full opacity-30"></div>
+
+                  <div class="relative">
+                    <h3 class="font-display font-medium text-lg leading-tight">Welcome to your teamspace!</h3>
+                    <p class="text-slate-350 text-xs leading-relaxed mt-2.5">
+                      This system handles role-based updates, custom secure token parameters, project compartments, and timezone calculations automatically.
+                    </p>
+                  </div>
+                  <div class="relative flex items-center justify-between border-t border-slate-800 pt-4 mt-auto">
+                    <div>
+                      <div class="text-[10px] text-slate-400 uppercase font-mono tracking-widest">Active Workspace</div>
+                      <div id="stat-project-count" class="font-display font-bold text-lg">0 Projects</div>
+                    </div>
+                    <a href="#/projects" class="px-3 py-1.5 bg-slate-100 text-slate-950 hover:bg-white text-xs font-semibold rounded-lg transition">
+                      Vist Projects
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Live UTC timezone counter -->
+                <div class="bg-white rounded-2xl border border-slate-150 p-5 shadow-xs flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-slate-50 border border-slate-200 text-slate-450 rounded-lg flex items-center justify-center font-semibold">
+                      📆
+                    </div>
+                    <div>
+                      <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Platform Status</h4>
+                      <p class="font-display font-bold text-slate-850 text-sm leading-tight mt-0.5">Fully Automated</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-[10px] uppercase font-mono text-slate-450">Session Time (UTC)</div>
+                    <div id="dashboard-clock" class="font-mono text-sm text-slate-650 font-bold">12:23:02</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ================= SCREEN: PROJECTS LIST ================= -->
+          <section id="screen-projects" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 class="text-2xl font-display font-extrabold tracking-tight text-slate-900 sm:text-3xl">Projects Space</h1>
+                <p class="mt-1 text-sm text-slate-500">Form independent workspaces to group tasks and restrict member credentials.</p>
+              </div>
+              <div id="project-actions-container">
+                <!-- Create Project Button visible to System Admins only -->
+              </div>
+            </div>
+
+            <!-- PROJECTS LIST CONTAINER -->
+            <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Rendered dynamically -->
+            </div>
+
+            <!-- PROJECTS EMPTY STATE -->
+            <div id="projects-empty" class="hidden py-16 bg-white rounded-3xl border border-slate-150 p-8 flex flex-col items-center justify-center text-center gap-3 shadow-xs">
+              <div class="p-4 bg-slate-50 text-slate-400 border border-slate-100 rounded-full">
+                <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v2" />
+                </svg>
+              </div>
+              <h3 class="font-display font-bold text-slate-950 text-lg leading-tight">No projects configured</h3>
+              <p id="project-empty-detail" class="text-sm text-slate-450 max-w-md leading-relaxed">
+                As a team member, ask your system administrator to assign folder slots. Workspace registration handles data separation.
+              </p>
+            </div>
+          </section>
+
+          <!-- ================= SCREEN: PROJECT DETAIL ================= -->
+          <section id="screen-project-detail" class="hidden space-y-6">
+            <!-- Breadcrumbs -->
+            <nav class="flex text-xs font-medium text-slate-400 tracking-tight gap-1.5">
+              <a href="#/projects" class="hover:text-slate-700">Projects</a>
+              <span>/</span>
+              <span id="breadcrumb-project-name" class="text-slate-600 font-semibold cursor-default">Redesign</span>
+            </nav>
+
+            <div class="flex flex-col xl:flex-row gap-6 items-start">
+              <!-- Left Area: Details header + Task status compartments (col-span-3) -->
+              <div class="flex-1 w-full space-y-6">
+                <!-- Project summary banner -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-150 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div class="space-y-1">
+                    <h1 id="detail-project-title" class="text-2xl font-display font-extrabold tracking-tight text-slate-900 sm:text-3xl">Project Title</h1>
+                    <p id="detail-project-desc" class="text-slate-500 text-sm max-w-2xl leading-relaxed">Project description detailing milestones and requirements.</p>
+                    <div class="flex items-center gap-2 mt-2 leading-none text-slate-450 text-[11px] font-medium pt-1.5 border-t border-slate-50 w-max">
+                      <span>Owner:</span>
+                      <span id="detail-project-owner" class="font-semibold text-slate-700">Jane Admin</span>
+                    </div>
+                  </div>
+                  <!-- Admin Controls -->
+                  <div class="flex gap-2" id="detail-project-controls">
+                    <!-- Loaded dynamically if admin -->
+                  </div>
+                </div>
+
+                <!-- Task section header -->
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h2 class="font-display font-extrabold text-slate-900 text-lg">Project Tasks Kanban</h2>
+                    <p class="text-slate-400 text-xs">Filter status or drag tasks into corresponding rows.</p>
+                  </div>
+                  <div id="project-task-actions">
+                    <!-- Insert task button for project admin -->
+                  </div>
+                </div>
+
+                <!-- Tasks columns -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                  
+                  <!-- TO-DO COLUMN -->
+                  <div class="bg-slate-100 rounded-2xl p-4 self-stretch flex flex-col min-h-[400px]">
+                    <div class="flex items-center justify-between mb-4 px-1 pb-1 border-b border-slate-200">
+                      <span class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                        To Do
+                        <span id="col-count-todo" class="px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full font-mono text-[10px] font-semibold">0</span>
+                      </span>
+                    </div>
+                    <div id="col-list-todo" class="flex-1 space-y-3 flex flex-col overflow-y-auto max-h-[500px] pb-6">
+                      <!-- Filled dynamically -->
+                    </div>
+                  </div>
+
+                  <!-- IN PROGRESS COLUMN -->
+                  <div class="bg-slate-100 rounded-2xl p-4 self-stretch flex flex-col min-h-[400px]">
+                    <div class="flex items-center justify-between mb-4 px-1 pb-1 border-b border-slate-200">
+                      <span class="text-blue-700 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                        In Progress
+                        <span id="col-count-progress" class="px-2 py-0.5 bg-blue-150 text-blue-700 rounded-full font-mono text-[10px] font-semibold">0</span>
+                      </span>
+                    </div>
+                    <div id="col-list-progress" class="flex-1 space-y-3 flex flex-col overflow-y-auto max-h-[500px] pb-6">
+                      <!-- Filled dynamically -->
+                    </div>
+                  </div>
+
+                  <!-- DONE COLUMN -->
+                  <div class="bg-slate-100 rounded-2xl p-4 self-stretch flex flex-col min-h-[400px]">
+                    <div class="flex items-center justify-between mb-4 px-1 pb-1 border-b border-slate-200">
+                      <span class="text-green-700 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                        Completions
+                        <span id="col-count-done" class="px-2 py-0.5 bg-green-150 text-green-755 rounded-full font-mono text-[10px] font-semibold">0</span>
+                      </span>
+                    </div>
+                    <div id="col-list-done" class="flex-1 space-y-3 flex flex-col overflow-y-auto max-h-[500px] pb-6">
+                      <!-- Filled dynamically -->
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Right Area: Members allocation sidebar (xl:w-80) -->
+              <div class="w-full xl:w-80 space-y-6 flex-shrink-0">
+                <div class="bg-white rounded-2xl border border-slate-150 shadow-xs overflow-hidden">
+                  <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h3 class="font-display font-bold text-slate-900 text-sm">Project Members</h3>
+                      <p class="text-slate-400 text-[10px] uppercase font-semibold mt-0.5">Authorised Allocation</p>
+                    </div>
+                    <div id="member-invite-btn-container">
+                      <!-- Member invite trigger built for project admins -->
+                    </div>
+                  </div>
+                  
+                  <!-- Member entries -->
+                  <ul id="project-members-list" class="divide-y divide-slate-100 bg-white max-h-80 overflow-y-auto">
+                    <!-- Filled dynamically -->
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= SCREEN: TASK GRID / LIST ================= -->
+          <section id="screen-tasks" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 class="text-2xl font-display font-extrabold tracking-tight text-slate-900 sm:text-3xl">Workspace Tasks</h1>
+                <p class="mt-1 text-sm text-slate-500">Examine or query specific assignments across active folders.</p>
+              </div>
+              <div id="tasks-header-actions">
+                <!-- Add Task Button if required -->
+              </div>
+            </div>
+
+            <!-- FILTER CONTROLS BAR -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              
+              <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 flex-1">
+                <!-- Filter: Project -->
+                <div>
+                  <label for="filter-project" class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Project Workspace</label>
+                  <select id="filter-project" class="block w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-250 rounded-lg text-slate-700 focus:outline-none focus:ring-slate-800">
+                    <option value="">All Workspaces</option>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+
+                <!-- Filter: Status -->
+                <div>
+                  <label for="filter-status" class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Status</label>
+                  <select id="filter-status" class="block w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-250 rounded-lg text-slate-700 focus:outline-none focus:ring-slate-800">
+                    <option value="">All Statuses</option>
+                    <option value="todo">To Do</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="done">Done</option>
+                  </select>
+                </div>
+
+                <!-- Filter: Priority -->
+                <div>
+                  <label for="filter-priority" class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Priority</label>
+                  <select id="filter-priority" class="block w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-250 rounded-lg text-slate-700 focus:outline-none focus:ring-slate-800">
+                    <option value="">All Priorities</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                <!-- Filter: Assigned to me -->
+                <div class="flex items-end h-full">
+                  <label class="inline-flex items-center cursor-pointer mb-2.5">
+                    <input type="checkbox" id="filter-assigned-me" class="sr-only peer" />
+                    <div class="relative w-9 h-5 bg-gray-250 rounded-full peer peer-focus:ring-2 peer-focus:ring-slate-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-850"></div>
+                    <span class="ms-2 text-xs font-semibold text-slate-500 hover:text-slate-700">Assigned To Me</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Sorters -->
+              <div class="sm:border-l sm:border-slate-100 sm:pl-4">
+                <button id="clear-filters-btn" class="w-full sm:w-auto text-xs font-semibold text-rose-500 hover:text-rose-700 px-3 py-1.5 border border-rose-100 bg-rose-50 rounded-lg hover:bg-rose-100 transition whitespace-nowrap">
+                  Clear Filters
+                </button>
+              </div>
+
+            </div>
+
+            <!-- TASK GRID CONTENT -->
+            <div id="tasks-table-card" class="bg-white rounded-2xl border border-slate-150 shadow-xs overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-150 text-left text-sm">
+                  <thead class="bg-slate-50 text-slate-500 font-medium text-xs uppercase tracking-wider">
+                    <tr>
+                      <th class="px-6 py-3.5">Task Description</th>
+                      <th class="px-6 py-3.5">Project</th>
+                      <th class="px-6 py-3.5">Assignee</th>
+                      <th class="px-6 py-3.5">Due Date</th>
+                      <th class="px-6 py-3.5">Priority</th>
+                      <th class="px-6 py-3.5">Status</th>
+                      <th class="px-6 py-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tasks-list-body" class="divide-y divide-slate-100 bg-white">
+                    <!-- Loaded dynamically -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Tasks list empty State -->
+              <div id="tasks-empty" class="hidden p-16 flex flex-col items-center justify-center text-center gap-3 bg-white">
+                <div class="p-4 bg-slate-50 text-slate-400 border border-slate-100 rounded-full">
+                  <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 class="font-display font-bold text-slate-930 text-lg leading-tight">No tasks match your filter parameters</h3>
+                <p class="text-sm text-slate-400 max-w-sm leading-relaxed">Relax filters, choose a different workspace folder or trigger a general synchonization.</p>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- ============================ MODALS ============================ -->
+    <!-- ================================================================= -->
+
+    <!-- MODAL: ADD/EDIT PROJECT (ADMIN) -->
+    <div id="modal-project" class="hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100 transition-all transform scale-95 duration-200" id="project-modal-box">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
+          <h3 class="font-display font-bold text-slate-900 text-base" id="project-modal-title">Create Project</h3>
+          <button class="text-slate-400 hover:text-slate-700 modal-close-trigger">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form id="form-project" class="p-6 space-y-4">
+          <input type="hidden" id="project-editing-id" />
+          
+          <div>
+            <label for="project-name" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Project Name *</label>
+            <input type="text" id="project-name" required placeholder="e.g. Mobile Client Integration" class="block w-full px-3 py-2 border border-slate-250 rounded-xl text-sm focus:outline-none focus:ring-slate-800" />
+          </div>
+
+          <div>
+            <label for="project-description" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Description</label>
+            <textarea id="project-description" rows="3" placeholder="Brief details about the workspace goal, tools involved, or deadlines..." class="block w-full px-3 py-2 border border-slate-250 rounded-xl text-sm focus:outline-none focus:ring-slate-800"></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-50">
+            <button type="button" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg border border-transparent modal-close-trigger">Cancel</button>
+            <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-850 rounded-lg transition" id="project-modal-submit">Create Project</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: ADD/EDIT TASK (PROJECT ADMIN) -->
+    <div id="modal-task" class="hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100 transform scale-95 duration-200" id="task-modal-box">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
+          <h3 class="font-display font-bold text-slate-900 text-base" id="task-modal-title">Publish Task</h3>
+          <button class="text-slate-400 hover:text-slate-700 modal-close-trigger">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form id="form-task" class="p-6 space-y-4">
+          <input type="hidden" id="task-editing-id" />
+          <input type="hidden" id="task-default-project-id" /> <!-- Set on context create -->
+
+          <div>
+            <label for="task-title" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Task Title *</label>
+            <input type="text" id="task-title" required placeholder="e.g. Set up JWT Session Encryption" class="block w-full px-3 py-2 border border-slate-250 rounded-xl text-sm focus:outline-none focus:ring-slate-800" />
+          </div>
+
+          <div>
+            <label for="task-description" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Description</label>
+            <textarea id="task-description" rows="3.5" placeholder="Define clear deliverables and constraints..." class="block w-full px-3 py-2 border border-slate-250 rounded-xl text-sm focus:outline-none focus:ring-slate-800"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Project context selection (hidden during Project detail addTask so it's tied automatically) -->
+            <div id="task-project-selection-wrapper">
+              <label for="task-project" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Project Space *</label>
+              <select id="task-project" class="block w-full px-3 py-2.5 border border-slate-250 bg-white rounded-xl text-sm focus:outline-none focus:ring-slate-800">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <div>
+              <label for="task-assignee" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Teammate Assignment</label>
+              <select id="task-assignee" class="block w-full px-3 py-2.5 border border-slate-250 bg-white rounded-xl text-sm focus:outline-none focus:ring-slate-800">
+                <option value="">Unassigned</option>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label for="task-status" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</label>
+              <select id="task-status" class="block w-full px-3 py-2 border border-slate-250 bg-white rounded-xl text-sm focus:outline-none focus:ring-slate-800">
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="task-priority" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Priority</label>
+              <select id="task-priority" class="block w-full px-3 py-2 border border-slate-250 bg-white rounded-xl text-sm focus:outline-none focus:ring-slate-800">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="task-due-date" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Due Date</label>
+              <input type="date" id="task-due-date" class="block w-full px-3 py-1.5 border border-slate-250 bg-white rounded-xl text-sm focus:outline-none focus:ring-slate-800" />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-55">
+            <button type="button" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg border border-transparent modal-close-trigger">Cancel</button>
+            <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-850 rounded-lg transition" id="task-modal-submit">Create Task</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: MEMBER ALLOCATION / INVITE (PROJECT ADMIN) -->
+    <div id="modal-member" class="hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-100 transform scale-95 duration-200" id="member-modal-box">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
+          <h3 class="font-display font-bold text-slate-900 text-sm">Add Project Member</h3>
+          <button class="text-slate-400 hover:text-slate-700 modal-close-trigger">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form id="form-member" class="p-6 space-y-4">
+          <input type="hidden" id="member-project-id" />
+
+          <div>
+            <label for="member-email" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Teammate Registered Email *</label>
+            <input type="email" id="member-email" required placeholder="member@company.com" class="block w-full px-3 py-2 border border-slate-250 rounded-xl text-sm focus:outline-none focus:ring-slate-800" />
+            <p class="text-[10px] text-slate-400 leading-normal mt-1.5">
+              💡 The teammate must have a registered system account first. Enter their dashboard email to grant project access.
+            </p>
+          </div>
+
+          <div>
+            <label for="member-role" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Project Level Role</label>
+            <select id="member-role" class="block w-full px-3 py-2 border border-slate-250 bg-white rounded-xl text-sm focus:outline-none focus:ring-slate-800">
+              <option value="member">Project Member</option>
+              <option value="admin">Project Administrator</option>
+            </select>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-50">
+            <button type="button" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg border border-transparent modal-close-trigger">Cancel</button>
+            <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-850 rounded-lg transition">Invite Member</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: STAGE INLINE STATUS UPDATE (MEMBERS ONLY DETAILS VIEW) -->
+    <div id="modal-task-view" class="hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100 transform scale-95 duration-200" id="task-view-modal-box">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
+          <div>
+            <span id="task-view-project" class="text-[10px] uppercase font-mono bg-slate-200 text-slate-650 px-2 py-0.5 rounded-full tracking-wider">Project Name</span>
+            <h3 class="font-display font-medium text-slate-900 text-base mt-2" id="task-view-title">Task Title Display</h3>
+          </div>
+          <button class="text-slate-400 hover:text-slate-700 modal-close-trigger self-start">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div class="p-6 space-y-4">
+          <div>
+            <h4 class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Description</h4>
+            <p id="task-view-description" class="text-xs text-slate-600 mt-1 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 whitespace-pre-line min-h-16">
+              No description loaded.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <h4 class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Assignee</h4>
+              <p id="task-view-assignee" class="mt-1 font-semibold text-slate-755">Unassigned</p>
+            </div>
+            <div>
+              <h4 class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Due Date</h4>
+              <p id="task-view-due" class="mt-1 font-medium font-mono text-slate-600">None</p>
+            </div>
+            <div>
+              <h4 class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Priority</h4>
+              <p id="task-view-priority" class="mt-1">
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] uppercase font-mono font-bold">Medium</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-100 pt-4">
+            <form id="form-task-view-status" class="space-y-3">
+              <input type="hidden" id="task-view-id" />
+              <div>
+                <label for="task-view-status-select" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Modify Progress Status</label>
+                <select id="task-view-status-select" class="block w-full px-3 py-2 border border-slate-250 bg-white rounded-xl text-sm focus:outline-none focus:ring-slate-800">
+                  <option value="todo">To Do</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="done">Done</option>
+                </select>
+                <p id="task-view-member-warning" class="text-[10px] text-slate-400 leading-normal mt-1.5 hidden">
+                  💡 Since you are a general project member, your permissions are restricted inside this project folder: you are only authorized to modify your own task progress states.
+                </p>
+              </div>
+              <div class="flex items-center justify-end gap-2.5 pt-2">
+                <button type="button" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 rounded-lg modal-close-trigger">Close</button>
+                <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-850 rounded-lg transition">Apply Status Change</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drivers -->
+    <script src="/app.js"></script>
+
+  </body>
+</html>
