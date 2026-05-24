@@ -1,20 +1,31 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# TaskFlow - Team Task Manager
 
-# Run and deploy your AI Studio app
+A full-stack web app for managing projects and tasks with role-based access.
 
-This contains everything you need to run your app locally.
+## Live URL
+https://YOUR-RAILWAY-URL.railway.app
 
-View your app in AI Studio: https://ai.studio/apps/17b24e70-28c8-45cb-ba5d-842723ea4a2d
+## GitHub Repo
+https://github.com/Daminiritgithub/team-task-manager
 
-## Run Locally
+## Tech Stack
+- Frontend: HTML + CSS + Tailwind CSS
+- Backend: Node.js + Express + TypeScript
+- Database: Supabase (PostgreSQL)
+- Auth: JWT tokens
 
-**Prerequisites:**  Node.js
+## Demo Credentials
+- Admin: admin@demo.com / Admin@123
+- Member: member@demo.com / Member@123
 
+## Local Setup
+npm install
+npm run dev
+# Open http://localhost:3000
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Features
+- Authentication (Signup/Login)
+- Project & team management
+- Task creation, assignment & status tracking
+- Dashboard with stats
+- Role-based access (Admin/Member)
