@@ -15,7 +15,7 @@ export function getPool(): pg.Pool {
     
     // Fallback directly to the user's Supabase PostgreSQL endpoint if unspecified or a placeholder REST URL
     if (!connectionString || (!connectionString.startsWith('postgres://') && !connectionString.startsWith('postgresql://'))) {
-      connectionString = "postgresql://postgres:Damini@2316@db.ghrofxepbmrzwfngcage.supabase.co:5432/postgres";
+      connectionString = process.env.DATABASE_URL || '';
     }
 
     poolInstance = new pg.Pool({
