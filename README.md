@@ -15,7 +15,7 @@ https://github.com/Daminiritgithub/team-task-manager
 - Auth: JWT tokens
 
 ## Demo Credentials
-- Admin: admin@demo.com / Admin@123
+- Admin: admin@demo.com / password
 - Member: member@demo.com / Member@123
 
 ## Local Setup
