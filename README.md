@@ -3,7 +3,7 @@
 A full-stack web app for managing projects and tasks with role-based access.
 
 ## Live URL
-https://YOUR-RAILWAY-URL.railway.app
+https://team-task-manager-production-9c91.up.railway.app
 
 ## GitHub Repo
 https://github.com/Daminiritgithub/team-task-manager
